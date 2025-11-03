@@ -1,0 +1,149 @@
+*.log
+*.xls
+*.xlsx
+*.xls
+*.csv
+
+# --------------------------------
+# Python bytecode and caches
+# --------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --------------------------------
+# Virtual environments
+# --------------------------------
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# --------------------------------
+# Environment variable files
+# --------------------------------
+.env
+.env.*
+
+# --------------------------------
+# Python build & packaging (advanced use cases)
+# --------------------------------
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+pip-wheel-metadata/
+__pypackages__/
+wheelhouse/
+
+# --------------------------------
+# Unit test / coverage reports
+# --------------------------------
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# --------------------------------
+# Type checkers and linters
+# --------------------------------
+.pyre/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+pylint-report.txt
+pylint-output.txt
+
+# --------------------------------
+# IDE and editor config
+# --------------------------------
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+
+# Emacs
+*~
+.\#*
+#*#
+
+# Vim
+*.swp
+*.swo
+*.vimbackup
+*.vimrc
+
+# --------------------------------
+# macOS system files
+# --------------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+.Spotlight-V100
+.Trashes
+._*
+*.AppleDouble
+Icon?
+ehthumbs.db
+Thumbs.db
+
+# --------------------------------
+# Backup files
+# --------------------------------
+*~
+*.bak
+*.orig
+*.old
+*.tmp
+*.temp
+
+# --------------------------------
+# Docker
+# --------------------------------
+*.tar
+*.container
+docker-compose.override.yml
+.env.docker
+
+# --------------------------------
+# Security-related
+# --------------------------------
+*.pem
+*.key
+*.crt
+*.pub
+*.token
+.secrets/
+
+# --------------------------------
+# Logs and local data
+# --------------------------------
+*.log
+*.sqlite3
+
+# --------------------------------
+# Jupyter Notebook
+# --------------------------------
+.ipynb_checkpoints
+
