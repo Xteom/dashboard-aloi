@@ -147,3 +147,4 @@ docker-compose.override.yml
 # --------------------------------
 .ipynb_checkpoints
 
+app/data/cansadometro.db

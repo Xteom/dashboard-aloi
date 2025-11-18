@@ -1,14 +1,9 @@
-import matplotlib.pyplot as plt
-import streamlit as st
+# app/pages/utils/plotting.py
+import pandas as pd
 
-def plot_metric(df, metric_name):
-    if df.empty:
-        st.info("No hay datos aún para este indicador.")
-        return
-    fig, ax = plt.subplots()
-    ax.plot(df["date"], df["score"], marker="o")
-    ax.set_title(f"Evolución de {metric_name}")
-    ax.set_xlabel("Fecha")
-    ax.set_ylabel("Puntaje")
-    ax.grid(True, alpha=0.3)
-    st.pyplot(fig)
+def tidy_series(rows, cols, index=0, value=1):
+    """Convierte filas [(date, score, ...)] a DataFrame time-series."""
+    df = pd.DataFrame(rows, columns=cols)
+    df["date"] = pd.to_datetime(df["date"])
+    df = df.sort_values("date")
+    return df

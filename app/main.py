@@ -1,16 +1,12 @@
+# app/main.py
 import streamlit as st
 from pages.utils.db import init_db
 
-st.set_page_config(
-    page_title="Bienestar Diario - Cansadómetro & Motivómetro",
-    layout="centered",
-)
-
+st.set_page_config(page_title="Wellness Dashboard", page_icon="💤", layout="wide")
 init_db()
 
-st.title("🌞 Panel de Bienestar Diario")
+st.title("Wellness Dashboard")
 st.markdown(
-    "Registra tu nivel de **cansancio** y **motivación** para hacer un seguimiento de tu energía y bienestar."
+    "Usa la barra lateral izquierda para ir a **Bienestar**. "
+    "Esta app guarda datos localmente en `app/data/cansadometro.db`."
 )
-
-st.sidebar.success("Selecciona una pestaña arriba para comenzar.")

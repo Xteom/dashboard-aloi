@@ -1,28 +1,107 @@
-from sqlalchemy import create_engine
-import pandas as pd
-import datetime
+# app/pages/utils/db.py
+import os, sqlite3
+from pathlib import Path
+from typing import Iterable, Optional, Tuple
 
-DB_PATH = "data/cansadometro.db"
-engine = create_engine(f"sqlite:///{DB_PATH}", echo=False)
+DB_PATH = Path(__file__).resolve().parents[2] / "data" / "cansadometro.db"
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+def get_conn():
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("PRAGMA foreign_keys = ON;")
+    return conn
 
 def init_db():
-    with engine.begin() as conn:
-        conn.exec_driver_sql("""
-        CREATE TABLE IF NOT EXISTS metrics (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            date TEXT,
-            type TEXT,
-            score REAL
-        )
+    with get_conn() as con:
+        # Cansadometro (único por fecha)
+        con.execute("""
+        CREATE TABLE IF NOT EXISTS fatigue_entries (
+            date TEXT PRIMARY KEY,
+            D REAL, QS REAL, AM REAL, S REAL, AF REAL, A REAL,
+            score REAL,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+        """)
+        # Motivometro (único por fecha)
+        con.execute("""
+        CREATE TABLE IF NOT EXISTS motivation_entries (
+            date TEXT PRIMARY KEY,
+            EB REAL, AUT REAL, EMO REAL, CLA REAL, REL REAL,
+            APO REAL, REC REAL, VAL REAL, PRO REAL,
+            score REAL,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+        """)
+        # Vista de export
+        con.execute("""
+        CREATE VIEW IF NOT EXISTS vw_export AS
+        SELECT
+          COALESCE(f.date, m.date) AS date,
+          f.score AS fatigue_score, m.score AS motivation_score,
+          f.D, f.QS, f.AM, f.S, f.AF, f.A,
+          m.EB, m.AUT, m.EMO, m.CLA, m.REL, m.APO, m.REC, m.VAL, m.PRO
+        FROM fatigue_entries f
+        FULL OUTER JOIN motivation_entries m
+          ON f.date = m.date;
+        """)
+        # Nota: SQLite no soporta FULL OUTER JOIN; creamos vista con UNION
+        con.execute("DROP VIEW IF EXISTS vw_export;")
+        con.execute("""
+        CREATE VIEW vw_export AS
+        SELECT f.date as date, f.score as fatigue_score, m.score as motivation_score,
+               f.D, f.QS, f.AM, f.S, f.AF, f.A,
+               m.EB, m.AUT, m.EMO, m.CLA, m.REL, m.APO, m.REC, m.VAL, m.PRO
+        FROM fatigue_entries f
+        LEFT JOIN motivation_entries m ON f.date=m.date
+        UNION
+        SELECT m.date as date, f.score as fatigue_score, m.score as motivation_score,
+               f.D, f.QS, f.AM, f.S, f.AF, f.A,
+               m.EB, m.AUT, m.EMO, m.CLA, m.REL, m.APO, m.REC, m.VAL, m.PRO
+        FROM motivation_entries m
+        LEFT JOIN fatigue_entries f ON f.date=m.date
+        ;
         """)
 
-def insert_score(metric_type: str, score: float):
-    date = datetime.date.today().isoformat()
-    with engine.begin() as conn:
-        conn.exec_driver_sql(
-            "INSERT INTO metrics (date, type, score) VALUES (?, ?, ?)",
-            (date, metric_type, score)
-        )
+def upsert_fatigue(date_iso: str, payload: dict):
+    cols = ["date","D","QS","AM","S","AF","A","score"]
+    vals = [date_iso] + [payload[k] for k in ["D","QS","AM","S","AF","A","score"]]
+    with get_conn() as con:
+        con.execute(f"""
+            INSERT INTO fatigue_entries ({",".join(cols)})
+            VALUES ({",".join(["?"]*len(cols))})
+            ON CONFLICT(date) DO UPDATE SET
+              D=excluded.D, QS=excluded.QS, AM=excluded.AM, S=excluded.S,
+              AF=excluded.AF, A=excluded.A, score=excluded.score
+        """, vals)
 
-def get_scores(metric_type: str) -> pd.DataFrame:
-    return pd.read_sql(f"SELECT date, score FROM metrics WHERE type='{metric_type}' ORDER BY date", engine)
+def upsert_motivation(date_iso: str, payload: dict):
+    cols = ["date","EB","AUT","EMO","CLA","REL","APO","REC","VAL","PRO","score"]
+    vals = [date_iso] + [payload[k] for k in ["EB","AUT","EMO","CLA","REL","APO","REC","VAL","PRO","score"]]
+    with get_conn() as con:
+        con.execute(f"""
+            INSERT INTO motivation_entries ({",".join(cols)})
+            VALUES ({",".join(["?"]*len(cols))})
+            ON CONFLICT(date) DO UPDATE SET
+              EB=excluded.EB, AUT=excluded.AUT, EMO=excluded.EMO, CLA=excluded.CLA,
+              REL=excluded.REL, APO=excluded.APO, REC=excluded.REC, VAL=excluded.VAL,
+              PRO=excluded.PRO, score=excluded.score
+        """, vals)
+
+def fetch_fatigue_history(limit: Optional[int]=90):
+    q = "SELECT date, score, D, QS, AM, S, AF, A FROM fatigue_entries ORDER BY date"
+    if limit: q += " LIMIT ?"
+    with get_conn() as con:
+        cur = con.execute(q, (limit,) if limit else ())
+        return cur.fetchall()
+
+def fetch_motivation_history(limit: Optional[int]=90):
+    q = "SELECT date, score, EB, AUT, EMO, CLA, REL, APO, REC, VAL, PRO FROM motivation_entries ORDER BY date"
+    if limit: q += " LIMIT ?"
+    with get_conn() as con:
+        cur = con.execute(q, (limit,) if limit else ())
+        return cur.fetchall()
+
+def fetch_export_df():
+    import pandas as pd
+    with get_conn() as con:
+        return pd.read_sql_query("SELECT * FROM vw_export ORDER BY date;", con)
