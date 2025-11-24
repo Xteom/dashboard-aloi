@@ -6,7 +6,8 @@ from datetime import date, timedelta
 from pages.utils.metrics import cansadometro_score, motivometro
 from pages.utils.db import (
     init_db, upsert_fatigue, upsert_motivation,
-    fetch_fatigue_history, fetch_motivation_history, fetch_export_df
+    fetch_fatigue_history, fetch_motivation_history, fetch_export_df,
+    fetch_latest_fatigue, fetch_latest_motivation
 )
 from pages.utils.plotting import tidy_series
 
@@ -42,23 +43,32 @@ yesterday = today - timedelta(days=1)
 
 # ------------- Captura Cansadómetro -------------
 st.subheader("Cansadómetro")
+# Load last entered values
+last_fatigue = fetch_latest_fatigue()
+default_D = last_fatigue["D"] if last_fatigue else 10.0
+default_QS = last_fatigue["QS"] if last_fatigue else 10.0
+default_AM = last_fatigue["AM"] if last_fatigue else 10.0
+default_S = last_fatigue["S"] if last_fatigue else 10.0
+default_AF = last_fatigue["AF"] if last_fatigue else 10.0
+default_A = last_fatigue["A"] if last_fatigue else 10.0
+
 with st.form("cansado_form", clear_on_submit=False):
     c_date = st.date_input("Fecha", value=today, help="Puedes registrar días pasados.")
     col1, col2, col3 = st.columns(3)
     with col1:
-        D  = st.number_input("Deuda de sueño (puede >10)", min_value=0.0, step=0.1, value=5.0,
+        D  = st.number_input("Deuda de sueño (puede >10)", min_value=0.0, step=0.1, value=default_D,
                              help=HELP_FATIGUE["D"])
-        QS = st.slider("Calidad de sueño (QS)", 0.0, 10.0, 7.0, 0.5,
+        QS = st.slider("Calidad de sueño (QS)", 0.0, 10.0, default_QS, 0.5,
                        help=HELP_FATIGUE["QS"])
     with col2:
-        AM = st.slider("Agotamiento mental (AM)", 0.0, 10.0, 7.0, 0.5,
+        AM = st.slider("Agotamiento mental (AM)", 0.0, 10.0, default_AM, 0.5,
                        help=HELP_FATIGUE["AM"])
-        S  = st.slider("Salud (S)", 0.0, 10.0, 8.0, 0.5,
+        S  = st.slider("Salud (S)", 0.0, 10.0, default_S, 0.5,
                        help=HELP_FATIGUE["S"])
     with col3:
-        AF = st.slider("Agotamiento físico (AF)", 0.0, 10.0, 7.0, 0.5,
+        AF = st.slider("Agotamiento físico (AF)", 0.0, 10.0, default_AF, 0.5,
                        help=HELP_FATIGUE["AF"])
-        A  = st.slider("Peso de acumulado (A)", 0.0, 10.0, 3.0, 0.5,
+        A  = st.slider("Peso de acumulado (A)", 0.0, 10.0, default_A, 0.5,
                        help=HELP_FATIGUE["A"])
 
     submitted = st.form_submit_button("Guardar Cansadómetro")
@@ -70,29 +80,41 @@ with st.form("cansado_form", clear_on_submit=False):
 
 # ------------- Captura Motivómetro -------------
 st.subheader("Motivómetro")
+# Load last entered values
+last_motivation = fetch_latest_motivation()
+default_EB = last_motivation["EB"] if last_motivation else 7.0
+default_AUT = last_motivation["AUT"] if last_motivation else 8.0
+default_EMO = last_motivation["EMO"] if last_motivation else 6.0
+default_CLA = last_motivation["CLA"] if last_motivation else 8.0
+default_REL = last_motivation["REL"] if last_motivation else 8.0
+default_APO = last_motivation["APO"] if last_motivation else 7.0
+default_REC = last_motivation["REC"] if last_motivation else 6.0
+default_VAL = last_motivation["VAL"] if last_motivation else 9.0
+default_PRO = last_motivation["PRO"] if last_motivation else 8.0
+
 with st.form("motivo_form", clear_on_submit=False):
     m_date = st.date_input("Fecha", value=today, key="m_date")
     co1, co2, co3 = st.columns(3)
     with co1:
-        EB  = st.slider("Energía base (EB)", 0.0, 10.0, 7.0, 0.5,
+        EB  = st.slider("Energía base (EB)", 0.0, 10.0, default_EB, 0.5,
                         help=HELP_MOTIV["EB"])
-        AUT = st.slider("Autonomía (AUT)", 0.0, 10.0, 8.0, 0.5,
+        AUT = st.slider("Autonomía (AUT)", 0.0, 10.0, default_AUT, 0.5,
                         help=HELP_MOTIV["AUT"])
-        EMO = st.slider("Emociones (+) (EMO)", 0.0, 10.0, 6.0, 0.5,
+        EMO = st.slider("Emociones (+) (EMO)", 0.0, 10.0, default_EMO, 0.5,
                         help=HELP_MOTIV["EMO"])
     with co2:
-        CLA = st.slider("Claridad (CLA)", 0.0, 10.0, 8.0, 0.5,
+        CLA = st.slider("Claridad (CLA)", 0.0, 10.0, default_CLA, 0.5,
                         help=HELP_MOTIV["CLA"])
-        REL = st.slider("Relevancia (REL)", 0.0, 10.0, 8.0, 0.5,
+        REL = st.slider("Relevancia (REL)", 0.0, 10.0, default_REL, 0.5,
                         help=HELP_MOTIV["REL"])
-        APO = st.slider("Apoyo (APO)", 0.0, 10.0, 7.0, 0.5,
+        APO = st.slider("Apoyo (APO)", 0.0, 10.0, default_APO, 0.5,
                         help=HELP_MOTIV["APO"])
     with co3:
-        REC = st.slider("Reconocimiento (REC)", 0.0, 10.0, 6.0, 0.5,
+        REC = st.slider("Reconocimiento (REC)", 0.0, 10.0, default_REC, 0.5,
                         help=HELP_MOTIV["REC"])
-        VAL = st.slider("Valores (VAL)", 0.0, 10.0, 9.0, 0.5,
+        VAL = st.slider("Valores (VAL)", 0.0, 10.0, default_VAL, 0.5,
                         help=HELP_MOTIV["VAL"])
-        PRO = st.slider("Propósito (PRO)", 0.0, 10.0, 8.0, 0.5,
+        PRO = st.slider("Propósito (PRO)", 0.0, 10.0, default_PRO, 0.5,
                         help=HELP_MOTIV["PRO"])
 
 

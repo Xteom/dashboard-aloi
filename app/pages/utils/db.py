@@ -101,6 +101,37 @@ def fetch_motivation_history(limit: Optional[int]=90):
         cur = con.execute(q, (limit,) if limit else ())
         return cur.fetchall()
 
+def fetch_latest_fatigue() -> Optional[dict]:
+    """Returns the most recent fatigue entry as a dict, or None if no entries exist."""
+    with get_conn() as con:
+        cur = con.execute("""
+            SELECT D, QS, AM, S, AF, A
+            FROM fatigue_entries
+            ORDER BY date DESC
+            LIMIT 1
+        """)
+        row = cur.fetchone()
+        if row:
+            return {"D": row[0], "QS": row[1], "AM": row[2], "S": row[3], "AF": row[4], "A": row[5]}
+        return None
+
+def fetch_latest_motivation() -> Optional[dict]:
+    """Returns the most recent motivation entry as a dict, or None if no entries exist."""
+    with get_conn() as con:
+        cur = con.execute("""
+            SELECT EB, AUT, EMO, CLA, REL, APO, REC, VAL, PRO
+            FROM motivation_entries
+            ORDER BY date DESC
+            LIMIT 1
+        """)
+        row = cur.fetchone()
+        if row:
+            return {
+                "EB": row[0], "AUT": row[1], "EMO": row[2], "CLA": row[3],
+                "REL": row[4], "APO": row[5], "REC": row[6], "VAL": row[7], "PRO": row[8]
+            }
+        return None
+
 def fetch_export_df():
     import pandas as pd
     with get_conn() as con:
